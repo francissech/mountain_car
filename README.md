@@ -142,29 +142,34 @@ Q-Learning presenta una implementación más sencilla e interpretable, aunque re
 
 ---
 
-## 5. Evidencia de los resultados
-
-### Resultado de Q-Learning
-
-![Resultado Q-Learning](evidencias/resultado_qlearning.png)
-
-Resultados de evaluación:
-
-- Mean reward: **-128.30 ± 21.69**
-- Reached the flag: **10/10 episodes**
-- Ejecución renderizada: **103 pasos**
-
-### Resultado de DQN
-
-![Resultado DQN](evidencias/resultado_dqn.png)
-
-Resultados de evaluación:
-
-- Mean reward: **-103.20 ± 7.19**
-- Reached the flag: **10/10 episodes**
-- Ejecución renderizada: **114 pasos**
-
 ---
+
+## Evidencias de la actividad
+
+A continuación se presentan las evidencias correspondientes al entrenamiento y evaluación de los agentes Q-Learning y Deep Q-Network (DQN) en el entorno MountainCar-v0.
+
+### Evidencia de los resultados obtenidos
+
+La siguiente captura muestra la evaluación final de los dos agentes:
+
+![Resultados de Q-Learning y DQN](evidencias/EVIDENCIA1.png)
+
+Los resultados de evaluación fueron:
+
+| Método | Recompensa media | Episodios exitosos |
+|---|---:|---:|
+| Q-Learning | -117.30 ± 15.61 | 10/10 |
+| DQN | -103.20 ± 7.19 | 10/10 |
+
+Los dos métodos lograron alcanzar la bandera en los 10 episodios utilizados durante la evaluación.
+
+### Esquemas del proceso de entrenamiento
+
+Los esquemas elaborados para representar gráficamente el proceso de entrenamiento se encuentran en el siguiente documento:
+
+[Ver esquemas del proceso de entrenamiento](evidencias/Esquema_Q_Learning_MountainCar.pdf)
+
+El documento presenta gráficamente las etapas utilizadas para comprender el proceso de aprendizaje de los agentes implementados en esta actividad.
 
 ## 6. Archivos principales del proyecto
 
