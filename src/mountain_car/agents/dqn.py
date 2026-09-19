@@ -40,10 +40,16 @@ class QNetwork(nn.Module):
 
     def __init__(self, state_dim: int, action_dim: int, hidden: int = 128) -> None:
         super().__init__()
-        raise NotImplementedError("EXERCISE 2a: build the Q-network")
+        self.net = nn.Sequential(
+            nn.Linear(state_dim, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Linear(hidden, action_dim)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError("EXERCISE 2a: implement forward()")
+        return self.net(x)
 
 
 # ── Replay buffer ────────────────────────────────────────────────────
@@ -123,31 +129,29 @@ class DQNAgent:
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=lr)
         self.loss_fn = nn.MSELoss()
         self.buffer = ReplayBuffer(buffer_capacity)
+        self.explore_action = None
+        self.explore_steps_left = 0
 
     # ── policy ────────────────────────────────────────────────────────
 
     def select_action(self, state: np.ndarray, *, deterministic: bool = False) -> int:
-        """Textbook epsilon-greedy: explore with probability epsilon.
+        """Selecciona una acción usando exploración persistente."""
 
-        EXERCISE 3: this is the standard, by-the-book implementation, and it is
-        not enough. Once EXERCISE 2 is done, `train dqn` will run happily and
-        report a completely flat score, forever, having learned nothing.
+        # Exploración temporalmente correlacionada
+        if not deterministic:
 
-        Your job is to work out WHY and fix it. The bug is not in this method's
-        code -- it is correct epsilon-greedy. It is in what this exploration
-        strategy can actually reach in this particular environment.
+            # Si estamos realizando una secuencia exploratoria,
+            # continuar con la misma acción.
+            if self.explore_steps_left > 0:
+                self.explore_steps_left -= 1
+                return self.explore_action
 
-        Starting clue: the car is too weak to drive straight up the hill, so it
-        has to rock back and forth in sustained runs to build momentum. Every
-        call below draws a completely fresh random action. Can a policy built
-        from independent per-step coin flips produce a sustained run?
-
-        EXERCISES.md has the full investigation and a ladder of further clues,
-        from gentle to nearly-the-answer -- take only as many as you need. Try
-        to diagnose it from your own measurements first.
-        """
-        if not deterministic and random.random() < self.epsilon:
-            return random.randrange(self.action_dim)
+            # Con probabilidad epsilon comienza una nueva
+            # secuencia exploratoria.
+            if random.random() < self.epsilon:
+                self.explore_action = random.randrange(self.action_dim)
+                self.explore_steps_left = 19
+                return self.explore_action
         with torch.no_grad():
             t = torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             return int(self.q_net(t).argmax(dim=1).item())
@@ -197,7 +201,26 @@ class DQNAgent:
         #      Tip: zero_grad() -> backward() -> step(), in that order.
         #
         # Return the scalar loss value (.item()).
-        raise NotImplementedError("EXERCISE 2b: implement the DQN learning step")
+        # 1. Valor Q actual para las acciones realizadas
+        current_q = self.q_net(states_t).gather(1, actions_t)
+
+        # 2. Mejor valor Q del siguiente estado usando la Target Network
+        with torch.no_grad():
+            next_q = self.target_net(next_states_t).max(
+                dim=1, keepdim=True
+            ).values
+
+        # 3. Objetivo de Bellman
+        target_q = rewards_t + self.gamma * next_q * (1.0 - terminateds_t)
+
+        # 4. Calcular la pérdida y actualizar la red neuronal
+        loss = self.loss_fn(current_q, target_q)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return loss.item()
 
     # ── training loop ─────────────────────────────────────────────────
 
