@@ -1,135 +1,186 @@
-![CI](https://github.com/emiliomunozai/mountain_car/actions/workflows/ci.yml/badge.svg?branch=main)
+# Actividad de Aprendizaje por Refuerzo: MountainCar-v0
 
-A hands-on repo for understanding how Reinforcement Learning works.
-Train, inspect, and visualise RL agents on [MountainCar-v0](https://gymnasium.farama.org/environments/classic_control/mountain_car/) (or any other Gymnasium environment).
+## Descripción de la actividad
 
-**This repo is a set of exercises.** The CLI, training loops and persistence are
-written; the algorithms themselves are left as marked `EXERCISE` stubs for you
-to fill in. Start with **[EXERCISES.md](EXERCISES.md)**.
+En esta actividad se implementan y comparan dos enfoques de Aprendizaje por Refuerzo para resolver el entorno **MountainCar-v0**:
 
-## MountainCar-v0 environment
+1. **Q-Learning tabular**
+2. **Deep Q-Network (DQN)**
 
-An under-powered car sits in a valley. Its engine is too weak to drive straight
-up the right-hand hill, so the only way out is to rock back and forth and build
-up momentum. The goal is to reach the flag at position `0.5`.
+El propósito es analizar las diferencias entre un método tabular clásico y un método de Deep Reinforcement Learning basado en redes neuronales.
 
-### State (observation) — 2 continuous values
+---
 
-| Index | Variable | Description | Range |
-|:---:|---|---|---|
-| 0 | position | Position of the car along the x-axis | -1.2 to 0.6 |
-| 1 | velocity | Velocity of the car | -0.07 to 0.07 |
+## 1. Entorno MountainCar-v0
 
-### Actions — 3 discrete
+MountainCar-v0 representa un automóvil situado entre dos montañas. El vehículo no tiene suficiente potencia para subir directamente la montaña de la derecha, por lo que debe aprender a desplazarse hacia ambos lados para generar impulso hasta alcanzar la bandera.
 
-| Value | Action |
-|:---:|---|
-| 0 | Accelerate to the left |
-| 1 | Don't accelerate |
-| 2 | Accelerate to the right |
+El estado del entorno está definido por dos variables continuas:
 
-### Rewards
+- **Posición** del vehículo.
+- **Velocidad** del vehículo.
 
-| Event | Reward |
-|---|---|
-| Every step taken | **-1** |
-| Reaching the flag (position >= 0.5) | episode ends |
+El agente dispone de tres acciones discretas:
 
-The reward is `-1` per step and nothing else, so the total return is simply the
-negative of the episode length: **less negative is better**. Episodes are cut
-off after 200 steps, which gives a floor of `-200` for a policy that never
-reaches the flag. Anything around `-110` or better is considered solved.
+- Acelerar hacia la izquierda.
+- No acelerar.
+- Acelerar hacia la derecha.
 
-This flat reward is what makes MountainCar interesting: there is no gradient to
-follow toward the goal, so the agent has to stumble onto the flag by
-exploration before it can learn anything at all.
+Cada episodio tiene un máximo de **200 pasos**.
 
-## Install
+---
 
-```bash
-uv sync
-```
+## 2. Q-Learning tabular
 
-## Usage
+Q-Learning utiliza una tabla Q para almacenar el valor esperado de ejecutar cada acción en cada estado.
 
-All commands are exposed through the `mountaincar` CLI:
+Como MountainCar-v0 posee un espacio de estados continuo, fue necesario realizar una **discretización** de las variables posición y velocidad.
 
-```bash
-uv run mountaincar <command>
-```
+El entrenamiento sigue de forma general el siguiente proceso:
 
-| Command | What it does |
-|---|---|
-| `version` | Show the package version |
-| `list` | List the agents and whether each has a save file |
-| `inspect` | Print the state/action spaces and some random transitions |
-| `init <agent>` | Create a new, untrained agent and save it |
-| `train <agent>` | Train an agent (resumes from its save if one exists) |
-| `load <agent>` | Print a saved agent's info, optionally evaluate it |
-| `sim <agent>` | Play episodes with a trained agent, printed step by step |
-| `render <agent>` | Play episodes in a graphical window |
-| `delete <agent>` | Delete an agent's save file |
+1. Obtener el estado actual del vehículo.
+2. Discretizar el estado.
+3. Seleccionar una acción mediante una estrategia epsilon-greedy.
+4. Ejecutar la acción en MountainCar-v0.
+5. Obtener la recompensa y el nuevo estado.
+6. Actualizar la tabla Q mediante la ecuación de Bellman.
+7. Repetir el proceso durante los episodios de entrenamiento.
 
-`<agent>` is either `qlearning` or `dqn`.
+La actualización utilizada corresponde a:
 
-### Example session
+Q(s,a) = Q(s,a) + α [r + γ max Q(s',a') - Q(s,a)]
 
-```bash
-# See what the environment looks like
-uv run mountaincar inspect --steps 3
+donde:
 
-# Train the tabular agent
-uv run mountaincar train qlearning --episodes 10000
+- α es la tasa de aprendizaje.
+- γ es el factor de descuento.
+- r es la recompensa.
+- s' es el nuevo estado.
 
-# How did it do?
-uv run mountaincar load qlearning --eval
+### Hiperparámetros y resultados de Q-Learning
 
-# Watch it drive
-uv run mountaincar render qlearning --episodes 3
-```
+- Episodios entrenados: **20100**
+- Estados visitados: **297 / 400**
+- Learning rate (α): **0.1**
+- Gamma (γ): **0.99**
+- Epsilon final: **0.01**
+- Recompensa media de evaluación: **-128.30 ± 21.69**
+- Meta alcanzada: **10/10 episodios**
 
-## Agents
+En una ejecución renderizada, el agente alcanzó la bandera en **103 pasos**, obteniendo una recompensa de **-103**.
 
-Both agents live in `src/mountain_car/agents/` and are written from scratch
-(no Stable-Baselines3 or similar), so every part of the algorithm is visible --
-and, in this repo, **partly left for you to write**. See [EXERCISES.md](EXERCISES.md).
+### Esquema propio del entrenamiento de Q-Learning
 
-### `qlearning` — tabular Q-Learning
+> En esta sección se incorporará el esquema elaborado por el estudiante.
 
-The observation is only 2-dimensional and the environment publishes hard bounds
-for both dimensions, so the state space is discretised into an
-`n_bins x n_bins` grid (400 states by default) and stored in a plain Q-table.
+![Esquema Q-Learning](evidencias/esquema_qlearning.jpg)
 
-Defaults: `n_bins=20`, `lr=0.1`, `gamma=0.99`, epsilon `1.0 -> 0.01` decaying by
-`0.9995` per episode. A correct implementation scores about `-133` and reaches
-the flag in 100/100 episodes, after roughly 20k episodes (~4 min).
+---
 
-### `dqn` — Deep Q-Network
+## 3. Deep Q-Network (DQN)
 
-A small MLP on the raw 2-D observation, trained with experience replay and a
-target network. A correct implementation scores about `-106` and reaches the
-flag in 100/100 episodes, after roughly 2500 episodes (~5 min on CPU) -- better
-than the tabular agent, and past the conventional "solved" threshold of `-110`.
+DQN utiliza una **red neuronal artificial** para aproximar la función de valor-acción Q(s,a), evitando almacenar explícitamente una tabla Q.
 
-Getting there takes more than transcribing the DQN pseudocode. MountainCar has
-a reward structure that defeats the textbook version of the algorithm, and
-Exercise 3 is about finding out how and why. That exercise ships with a ladder
-of progressive clues, so it is a guided investigation rather than a wall.
+La red neuronal recibe como entrada las variables que describen el estado del automóvil:
 
-> A note on hardware: none of this needs a GPU. The network is tiny and the
-> batches are small, so a gradient step costs about 0.5 ms on CPU and the
-> bottleneck is stepping the environment, not matrix multiplication. On a GPU
-> this would most likely be *slower*, because per-kernel launch overhead would
-> dominate work this small.
+- Posición.
+- Velocidad.
 
-## Project layout
+La salida de la red contiene un valor Q para cada una de las tres acciones disponibles.
 
-```
-src/mountain_car/
-├── cli.py              # argparse CLI, one command per function
-└── agents/
-    ├── qlearning.py    # tabular Q-Learning
-    └── dqn.py          # DQN: QNetwork, ReplayBuffer, DQNAgent
-saves/                  # agent save files land here
-EXERCISES.md            # the exercises: what to implement, in what order
-```
+La implementación utiliza elementos característicos de DQN:
+
+- Red neuronal Q.
+- Target Network.
+- Experience Replay Buffer.
+- Mini-batches.
+- Estrategia de exploración.
+- Optimizador Adam.
+
+En MountainCar es importante generar secuencias de movimiento que permitan al automóvil acumular impulso. En la implementación se empleó una estrategia de exploración temporalmente correlacionada para mantener determinadas acciones durante varios pasos y favorecer la exploración de estados relevantes.
+
+### Hiperparámetros y resultados de DQN
+
+- Episodios entrenados acumulados: **3620**
+- Parámetros de la red: **17283**
+- Learning rate: **0.001**
+- Gamma: **0.99**
+- Batch size: **64**
+- Actualización de Target Network: **cada 10 episodios**
+- Epsilon final: **0.01**
+- Recompensa media de evaluación: **-103.20 ± 7.19**
+- Meta alcanzada: **10/10 episodios**
+
+En una ejecución renderizada, el agente alcanzó la bandera en **114 pasos**, obteniendo una recompensa de **-114**.
+
+### Esquema propio del entrenamiento de DQN
+
+> En esta sección se incorporará el esquema elaborado por el estudiante.
+
+![Esquema DQN](evidencias/esquema_dqn.jpg)
+
+---
+
+## 4. Comparación de Q-Learning y DQN
+
+| Característica | Q-Learning | DQN |
+|---|---|---|
+| Representación de Q | Tabla Q | Red neuronal |
+| Estados utilizados | Discretizados | Continuos |
+| Learning rate | 0.1 | 0.001 |
+| Gamma | 0.99 | 0.99 |
+| Epsilon final | 0.01 | 0.01 |
+| Recompensa media | -128.30 | -103.20 |
+| Meta alcanzada | 10/10 | 10/10 |
+| Complejidad de implementación | Menor | Mayor |
+
+Los dos agentes consiguieron alcanzar la bandera en los **10 episodios de evaluación**.
+
+En esta ejecución experimental, DQN obtuvo una recompensa media menos negativa (**-103.20**) que Q-Learning (**-128.30**). Sin embargo, DQN requiere una implementación más compleja, debido al uso de una red neuronal, Replay Buffer, Target Network y optimización mediante descenso de gradiente.
+
+Q-Learning presenta una implementación más sencilla e interpretable, aunque requiere discretizar el espacio continuo de estados.
+
+---
+
+## 5. Evidencia de los resultados
+
+### Resultado de Q-Learning
+
+![Resultado Q-Learning](evidencias/resultado_qlearning.png)
+
+Resultados de evaluación:
+
+- Mean reward: **-128.30 ± 21.69**
+- Reached the flag: **10/10 episodes**
+- Ejecución renderizada: **103 pasos**
+
+### Resultado de DQN
+
+![Resultado DQN](evidencias/resultado_dqn.png)
+
+Resultados de evaluación:
+
+- Mean reward: **-103.20 ± 7.19**
+- Reached the flag: **10/10 episodes**
+- Ejecución renderizada: **114 pasos**
+
+---
+
+## 6. Archivos principales del proyecto
+
+- `MountainCar_Actividad.ipynb`: notebook de desarrollo y análisis de la actividad.
+- `src/mountain_car/agents/qlearning.py`: implementación del agente Q-Learning.
+- `src/mountain_car/agents/dqn.py`: implementación del agente DQN.
+- `evidencias/`: esquemas propios y capturas de los resultados experimentales.
+
+---
+
+## 7. Conclusiones
+
+La actividad permitió implementar y comparar dos estrategias diferentes de Aprendizaje por Refuerzo para resolver MountainCar-v0.
+
+Q-Learning utiliza una representación tabular y requiere discretizar las variables continuas del entorno. Su implementación es relativamente sencilla y permitió que el agente alcanzara consistentemente la bandera durante la evaluación.
+
+DQN sustituye la tabla Q por una red neuronal capaz de aproximar la función de valor-acción a partir directamente del estado del entorno. Su implementación requiere mecanismos adicionales como Experience Replay y Target Network.
+
+En las evaluaciones realizadas, ambos métodos alcanzaron la meta en 10 de 10 episodios. Los resultados permiten observar las diferencias entre los métodos tabulares y los enfoques de Deep Reinforcement Learning tanto en su arquitectura como en su proceso de entrenamiento.
