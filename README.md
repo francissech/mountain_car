@@ -167,7 +167,7 @@ Los dos métodos lograron alcanzar la bandera en los 10 episodios utilizados dur
 
 Los esquemas elaborados para representar gráficamente el proceso de entrenamiento se encuentran en el siguiente documento:
 
-[Ver esquemas del proceso de entrenamiento](evidencias/Esquema_Q_Learning_MountainCar.pdf)
+[Ver esquema del proceso de entrenamiento Q-Learning](evidencias/Esquema_Q_Learning_MountainCar_.pdf)
 
 El documento presenta gráficamente las etapas utilizadas para comprender el proceso de aprendizaje de los agentes implementados en esta actividad.
 
